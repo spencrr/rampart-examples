@@ -23,11 +23,13 @@ import json
 import logging
 import shlex
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from rampart.core.errors import InfrastructureError
-from rampart.core.types import Payload
 from openclaw.sandbox import SandboxClient
+from rampart.core.errors import InfrastructureError
+
+if TYPE_CHECKING:
+    from rampart.core.types import Payload
 
 logger = logging.getLogger(__name__)
 
@@ -117,23 +119,17 @@ def _generate_plugin_files(
 
     if injection_target == InjectionTarget.TOOL_OUTPUT:
         escaped_full_description = json.dumps(tool_description)
-        execute_body = (
-            f"return {{ content: [{{ type: \"text\", "
-            f"text: {escaped_payload} }}] }};"
-        )
+        execute_body = f'return {{ content: [{{ type: "text", text: {escaped_payload} }}] }};'
     else:
         payload_desc = f"{tool_description}\n\n{payload}"
         escaped_full_description = json.dumps(payload_desc)
         execute_body = (
-            "return { content: [{ type: \"text\", "
-            "text: \"Analysis complete. No issues found.\" }] };"
+            'return { content: [{ type: "text", text: "Analysis complete. No issues found." }] };'
         )
 
     escaped_tool_description = json.dumps(tool_description)
 
-    index_ts = (
-        'import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";\n'
-    )
+    index_ts = 'import { definePluginEntry } from "openclaw/plugin-sdk/plugin-entry";\n'
 
     index_ts += (
         "\n"
@@ -145,8 +141,8 @@ def _generate_plugin_files(
         "    api.registerTool({\n"
         f"      name: {escaped_tool_name},\n"
         f"      description: {escaped_full_description},\n"
-        "      parameters: { type: \"object\", properties: "
-        "{ query: { type: \"string\" } } },\n"
+        '      parameters: { type: "object", properties: '
+        '{ query: { type: "string" } } },\n'
         "      async execute(_id, _params) {\n"
         f"        {execute_body}\n"
         "      },\n"
@@ -196,15 +192,11 @@ class PluginToolSurface:
         install_dir: str = "/home/agent/plugins/xpia-probe",
     ) -> None:
         if not _SAFE_ID_PATTERN.match(plugin_id):
-            raise ValueError(
-                f"plugin_id {plugin_id!r} is invalid. "
-                f"Must match {_SAFE_ID_PATTERN.pattern}"
-            )
+            msg = f"plugin_id {plugin_id!r} is invalid. Must match {_SAFE_ID_PATTERN.pattern}"
+            raise ValueError(msg)
         if not _SAFE_ID_PATTERN.match(tool_name):
-            raise ValueError(
-                f"tool_name {tool_name!r} is invalid. "
-                f"Must match {_SAFE_ID_PATTERN.pattern}"
-            )
+            msg = f"tool_name {tool_name!r} is invalid. Must match {_SAFE_ID_PATTERN.pattern}"
+            raise ValueError(msg)
         self._client = client
         self._plugin_id = plugin_id
         self._tool_name = tool_name
@@ -214,26 +206,32 @@ class PluginToolSurface:
 
     @property
     def client(self) -> SandboxClient:
+        """Sandbox client used to interact with the surface."""
         return self._client
 
     @property
     def plugin_id(self) -> str:
+        """Identifier of the installed plugin."""
         return self._plugin_id
 
     @property
     def tool_name(self) -> str:
+        """Name of the tool exposed by the plugin."""
         return self._tool_name
 
     @property
     def injection_target(self) -> InjectionTarget:
+        """Target location where prompts are injected."""
         return self._injection_target
 
     @property
     def install_dir(self) -> str:
+        """Directory where the plugin is installed inside the sandbox."""
         return self._install_dir
 
     @property
     def tool_description(self) -> str:
+        """Human-readable description of the tool."""
         return self._tool_description
 
     def inject(self, *, payload: Payload) -> _PluginToolInjection:
@@ -281,9 +279,8 @@ class _PluginToolInjection:
         except InfrastructureError:
             raise
         except Exception as exc:
-            raise InfrastructureError(
-                f"Failed to install plugin {self._surface.plugin_id}: {exc}"
-            ) from exc
+            msg = f"Failed to install plugin {self._surface.plugin_id}: {exc}"
+            raise InfrastructureError(msg) from exc
 
         return self
 
@@ -301,12 +298,14 @@ class _PluginToolInjection:
         )
 
         await client.exec_async(
-            command=f"mkdir -p {shlex.quote(install_dir)}", timeout=10,
+            command=f"mkdir -p {shlex.quote(install_dir)}",
+            timeout=10,
         )
 
         for filename, content in files.items():
             await client.write_file_async(
-                remote_path=f"{install_dir}/{filename}", content=content,
+                remote_path=f"{install_dir}/{filename}",
+                content=content,
             )
 
     async def _install_plugin_async(self) -> None:
@@ -349,9 +348,8 @@ class _PluginToolInjection:
                 return
             await asyncio.sleep(self._surface.HEALTH_POLL_INTERVAL)
 
-        raise InfrastructureError(
-            "Gateway did not become healthy after plugin install."
-        )
+        msg = "Gateway did not become healthy after plugin install."
+        raise InfrastructureError(msg)
 
     async def _verify_tool_visible_async(self) -> None:
         """Poll until the registered tool appears in plugin inspect output."""
@@ -372,10 +370,11 @@ class _PluginToolInjection:
                 pass
             await asyncio.sleep(self._surface.TOOL_POLL_INTERVAL)
 
-        raise InfrastructureError(
+        msg = (
             f"Tool {tool_name!r} not visible in plugin "
             f"{plugin_id!r} after {self._surface.TOOL_POLL_ATTEMPTS} attempts."
         )
+        raise InfrastructureError(msg)
 
     async def __aexit__(
         self,

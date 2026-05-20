@@ -6,7 +6,8 @@
 Usage:
     python scripts/run_auth_proxy.py
     python scripts/run_auth_proxy.py --port 12435 --verbose
-    python scripts/run_auth_proxy.py --config /path/to/config.json --log-bodies --request-log proxy.jsonl
+    python scripts/run_auth_proxy.py --config /path/to/config.json \
+        --log-bodies --request-log proxy.jsonl
 """
 
 from __future__ import annotations

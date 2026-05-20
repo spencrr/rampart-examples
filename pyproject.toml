@@ -40,6 +40,17 @@ ignore = [
 ]
 "**/conftest.py" = ["INP001"]
 
+"openclaw/**.py" = [
+    "BLE001",
+]
+"openclaw/**/test_*.py" = [
+    "D102",
+    "D107",
+    "PLR2004",
+]
+"openclaw/src/openclaw/html_report.py" = ["E501"]
+
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 

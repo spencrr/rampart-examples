@@ -67,9 +67,7 @@ def main():
     bridge_url = os.environ.get("BRIDGE_URL", DEFAULT_BRIDGE_URL)
     providers_env = os.environ.get("PROVIDERS", "").strip()
     provider_filter = (
-        {p.strip() for p in providers_env.split(",") if p.strip()}
-        if providers_env
-        else None
+        {p.strip() for p in providers_env.split(",") if p.strip()} if providers_env else None
     )
     models_override = load_models_override()
 
@@ -113,8 +111,7 @@ def main():
 
     if not configured:
         print(
-            "Error: No providers configured. "
-            "Check PROVIDERS filter and auth-proxy routes.",
+            "Error: No providers configured. Check PROVIDERS filter and auth-proxy routes.",
             file=sys.stderr,
         )
         sys.exit(1)
